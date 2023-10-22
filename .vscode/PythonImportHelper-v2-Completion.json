@@ -1,0 +1,110 @@
+[
+    {
+        "label": "pandas",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "pandas",
+        "description": "pandas",
+        "detail": "pandas",
+        "documentation": {}
+    },
+    {
+        "label": "numpy",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "numpy",
+        "description": "numpy",
+        "detail": "numpy",
+        "documentation": {}
+    },
+    {
+        "label": "parse_file",
+        "kind": 2,
+        "importPath": "aggregate_data_optimized",
+        "description": "aggregate_data_optimized",
+        "peekOfCode": "def parse_file(file_path):\n    # Read the file directly into a DataFrame\n    data = pd.read_csv(\n        file_path, \n        delimiter=';', \n        header=None, \n        names=['datetime', 'price1', 'price2', 'price3', 'volume'],\n        dtype={'datetime': str, 'price1': float, 'price2': float, 'price3': float, 'volume': int}\n    )\n    # Convert the 'datetime' column to a pandas datetime object",
+        "detail": "aggregate_data_optimized",
+        "documentation": {}
+    },
+    {
+        "label": "aggregate_ticks_vectorized",
+        "kind": 2,
+        "importPath": "aggregate_data_optimized",
+        "description": "aggregate_data_optimized",
+        "peekOfCode": "def aggregate_ticks_vectorized(data, ticks_per_bar=100):\n    # Calculate buy/sell volumes\n    data['buy_volume'] = np.where(data['price1'] == data['price2'], data['volume'], 0)\n    data['sell_volume'] = np.where(data['price1'] == data['price3'], data['volume'], 0)\n    # Create a grouping key for aggregating every 'ticks_per_bar' records\n    data['group_key'] = data.index // ticks_per_bar\n    # Define the aggregation dictionary\n    aggregation_funcs = {\n        'datetime': 'last',\n        'price1': ['max', 'min', 'last'],",
+        "detail": "aggregate_data_optimized",
+        "documentation": {}
+    },
+    {
+        "label": "calculate_market_profile",
+        "kind": 2,
+        "importPath": "aggregate_data_optimized",
+        "description": "aggregate_data_optimized",
+        "peekOfCode": "def calculate_market_profile(bars_df, value_area_volume_percentage=0.7):\n    results = []\n    for _, bar in bars_df.iterrows():\n        # For the market profile, we need individual transactions, which we don't have after aggregation.\n        # As an approximation, we distribute the total volume evenly across the price range (high to low) of the bar.\n        prices = np.linspace(bar['low'], bar['high'], num=int(bar['total_volume']))\n        volumes = np.full_like(prices, 1)  # since we're distributing evenly, each \"transaction\" is 1 volume unit\n        # Calculate volume profile\n        volume_profile = pd.Series(volumes, index=prices).groupby(level=0).sum()\n        poc_price = volume_profile.idxmax()",
+        "detail": "aggregate_data_optimized",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "aggregate_data_optimized",
+        "description": "aggregate_data_optimized",
+        "peekOfCode": "def main(file_path):\n    data = parse_file(file_path)\n    tick_bars = aggregate_ticks_vectorized(data, ticks_per_bar=1000)\n    market_profile_data = calculate_market_profile(tick_bars)\n    print(market_profile_data.head())  # Display the first few rows\n# Specify the path to your data file\nfile_path = r'ES DEC23.Last.csv'\nmain(file_path)",
+        "detail": "aggregate_data_optimized",
+        "documentation": {}
+    },
+    {
+        "label": "file_path",
+        "kind": 5,
+        "importPath": "aggregate_data_optimized",
+        "description": "aggregate_data_optimized",
+        "peekOfCode": "file_path = r'ES DEC23.Last.csv'\nmain(file_path)",
+        "detail": "aggregate_data_optimized",
+        "documentation": {}
+    },
+    {
+        "label": "parse_file",
+        "kind": 2,
+        "importPath": "aggregate_data_rowwise",
+        "description": "aggregate_data_rowwise",
+        "peekOfCode": "def parse_file(file_path):\n    data = []\n    with open(file_path, 'r') as file:\n        for line in file:\n            parts = line.strip().split(';')\n            if len(parts) >= 4:\n                datetime_parts = parts[0].split(' ')\n                if len(datetime_parts) == 3:\n                    timestamp = ' '.join(datetime_parts)\n                    data.append([timestamp] + parts[1:])",
+        "detail": "aggregate_data_rowwise",
+        "documentation": {}
+    },
+    {
+        "label": "aggregate_ticks",
+        "kind": 2,
+        "importPath": "aggregate_data_rowwise",
+        "description": "aggregate_data_rowwise",
+        "peekOfCode": "def aggregate_ticks(data, ticks_per_bar=100):\n    tick_counter = 0\n    buy_volume = 0\n    sell_volume = 0\n    high_price = -float('inf')\n    low_price = float('inf')\n    volumes = []\n    prices = []\n    bars = []\n    for index, row in data.iterrows():",
+        "detail": "aggregate_data_rowwise",
+        "documentation": {}
+    },
+    {
+        "label": "calculate_market_profile",
+        "kind": 2,
+        "importPath": "aggregate_data_rowwise",
+        "description": "aggregate_data_rowwise",
+        "peekOfCode": "def calculate_market_profile(bars, value_area_volume_percentage=0.7):\n    results = []\n    for bar in bars:\n        prices = bar['prices']\n        volumes = bar['volumes']\n        volume_profile = pd.Series(volumes, index=prices).groupby(level=0).sum()\n        poc_price = volume_profile.idxmax()\n        total_volume = volume_profile.sum()\n        value_area_volume = total_volume * value_area_volume_percentage\n        volume_cumsum = volume_profile.sort_values(ascending=False).cumsum()",
+        "detail": "aggregate_data_rowwise",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "aggregate_data_rowwise",
+        "description": "aggregate_data_rowwise",
+        "peekOfCode": "def main(file_path):\n    data = parse_file(file_path)\n    tick_bars = aggregate_ticks(data, ticks_per_bar=1000)\n    market_profile_data = calculate_market_profile(tick_bars)\n    print(market_profile_data.head())\n# Specify the path to your data file\nfile_path = 'ES DEC23.Last.csv'\nmain(file_path)",
+        "detail": "aggregate_data_rowwise",
+        "documentation": {}
+    },
+    {
+        "label": "file_path",
+        "kind": 5,
+        "importPath": "aggregate_data_rowwise",
+        "description": "aggregate_data_rowwise",
+        "peekOfCode": "file_path = 'ES DEC23.Last.csv'\nmain(file_path)",
+        "detail": "aggregate_data_rowwise",
+        "documentation": {}
+    }
+]
